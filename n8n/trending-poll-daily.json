@@ -1,0 +1,87 @@
+{
+  "name": "Trending feed → Claude tag → Supabase (daily)",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "days", "triggerAtHour": 5 } ] } },
+      "id": "schedule",
+      "name": "Every day 05:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": { "url": "https://www.anthropic.com/rss.xml", "options": {} },
+      "id": "rss",
+      "name": "Read AI news RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-opus-4-8', max_tokens: 16, messages: [{ role: 'user', content: 'Tag this AI-news headline as exactly one of: hook-potential, explainer, skip. Reply with ONLY the tag. Headline: ' + $json.title }] }) }}",
+        "options": {}
+      },
+      "id": "tag",
+      "name": "Claude: tag item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const tag = ($json.content?.[0]?.text || 'skip').trim();\nconst src = $('Read AI news RSS').item.json;\nreturn [{ json: { payload: [{\n  title: src.title,\n  source: 'Anthropic Blog',\n  source_type: 'rss',\n  url: src.link,\n  summary: (src.contentSnippet || '').slice(0, 280),\n  published_at: src.isoDate || new Date().toISOString(),\n  tag: ['hook-potential', 'explainer', 'skip'].includes(tag) ? tag : 'skip',\n  niche: 'ai'\n}] } }];"
+      },
+      "id": "shape",
+      "name": "Shape trend_items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [820, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/trend_items",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "id": "insert",
+      "name": "Insert → Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1020, 300]
+    }
+  ],
+  "connections": {
+    "Every day 05:00": { "main": [ [ { "node": "Read AI news RSS", "type": "main", "index": 0 } ] ] },
+    "Read AI news RSS": { "main": [ [ { "node": "Claude: tag item", "type": "main", "index": 0 } ] ] },
+    "Claude: tag item": { "main": [ [ { "node": "Shape trend_items", "type": "main", "index": 0 } ] ] },
+    "Shape trend_items": { "main": [ [ { "node": "Insert → Supabase", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

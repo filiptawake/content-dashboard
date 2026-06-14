@@ -1,0 +1,70 @@
+{
+  "name": "Competitor reels → Supabase (Sun 08:00)",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "weeks", "triggerAtDay": [0], "triggerAtHour": 8 } ] } },
+      "id": "schedule",
+      "name": "Sundays 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/apify~instagram-reel-scraper/run-sync-get-dataset-items?token={{ $env.APIFY_TOKEN }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ username: ['aimarketer', 'buildinpublic', 'toolfinder'], resultsLimit: 5 }) }}",
+        "options": {}
+      },
+      "id": "scrape",
+      "name": "Apify: top reels",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map((i) => i.json).map((r) => ({\n  tracked_by_account_id: $env.IG_ACCOUNT_ID || 'tenfoldmarc',\n  creator_handle: '@' + (r.ownerUsername || r.username || ''),\n  creator_followers: r.ownerFollowersCount ?? 0,\n  niche: 'ai',\n  posted_at: r.timestamp || new Date().toISOString(),\n  views: r.videoViewCount ?? r.videoPlayCount ?? 0,\n  hook: (r.caption || '').split('\\n')[0].slice(0, 120),\n  on_screen_text: '',\n  video_url: r.url || r.inputUrl,\n  audio_title: r.musicInfo?.song_name || 'original audio',\n  hook_type: 'nobody-talks'\n})).filter((r) => r.video_url);\nreturn [{ json: { payload: rows } }];"
+      },
+      "id": "shape",
+      "name": "Shape competitor_reels",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/competitor_reels",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "id": "insert",
+      "name": "Insert → Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Sundays 08:00": { "main": [ [ { "node": "Apify: top reels", "type": "main", "index": 0 } ] ] },
+    "Apify: top reels": { "main": [ [ { "node": "Shape competitor_reels", "type": "main", "index": 0 } ] ] },
+    "Shape competitor_reels": { "main": [ [ { "node": "Insert → Supabase", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

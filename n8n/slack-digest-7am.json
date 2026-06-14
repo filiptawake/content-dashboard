@@ -1,0 +1,64 @@
+{
+  "name": "Slack digest 07:00",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "days", "triggerAtHour": 7 } ] } },
+      "id": "schedule",
+      "name": "Every day 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/trend_items?tag=eq.hook-potential&order=published_at.desc&limit=5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch",
+      "name": "Top 5 hook-worthy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst items = Array.isArray(res) ? res : [res];\nconst lines = items.map((t, n) => `${n + 1}. *${t.title}* — ${t.source}\\n${t.url}`);\nconst text = ':fire: *Today\\'s hook-worthy AI news*\\n\\n' + lines.join('\\n\\n');\nreturn [{ json: { text } }];"
+      },
+      "id": "format",
+      "name": "Format digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text }) }}",
+        "options": {}
+      },
+      "id": "slack",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Every day 07:00": { "main": [ [ { "node": "Top 5 hook-worthy", "type": "main", "index": 0 } ] ] },
+    "Top 5 hook-worthy": { "main": [ [ { "node": "Format digest", "type": "main", "index": 0 } ] ] },
+    "Format digest": { "main": [ [ { "node": "Post to Slack", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

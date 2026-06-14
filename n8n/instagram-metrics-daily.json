@@ -1,0 +1,66 @@
+{
+  "name": "IG metrics → Supabase (daily)",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "days", "triggerAtHour": 6 } ] } },
+      "id": "schedule",
+      "name": "Every day 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.IG_USER_ID }}/insights?metric=reach,saved,follower_count&period=day&access_token={{ $env.IG_ACCESS_TOKEN }}",
+        "options": {}
+      },
+      "id": "fetch",
+      "name": "Fetch IG insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date().toISOString().slice(0, 10);\nconst account = $env.IG_ACCOUNT_ID || 'tenfoldmarc';\nconst map = { reach: 'views', saved: 'saves', follower_count: 'follows' };\nconst rows = [];\nfor (const m of ($json.data || [])) {\n  const key = map[m.name];\n  if (!key) continue;\n  rows.push({ account_id: account, metric_key: key, day: today, value: m.values?.[0]?.value ?? 0 });\n}\nreturn [{ json: { payload: rows } }];"
+      },
+      "id": "shape",
+      "name": "Shape metrics_daily rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/metrics_daily",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "id": "upsert",
+      "name": "Upsert → Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Every day 06:00": { "main": [ [ { "node": "Fetch IG insights", "type": "main", "index": 0 } ] ] },
+    "Fetch IG insights": { "main": [ [ { "node": "Shape metrics_daily rows", "type": "main", "index": 0 } ] ] },
+    "Shape metrics_daily rows": { "main": [ [ { "node": "Upsert → Supabase", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
