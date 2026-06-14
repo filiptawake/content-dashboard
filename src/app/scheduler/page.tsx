@@ -28,20 +28,44 @@ export default function SchedulerPage() {
     [accountPosts],
   );
 
-  function publish(post: ScheduledPost) {
-    setPosted((prev) => new Set(prev).add(post.id));
-    toast.success("Posted via Zernio MCP", {
-      description: `${post.hook} → ${post.platforms
-        .map((p) => PLATFORM_LABELS[p])
-        .join(", ")}`,
-    });
+  async function publish(post: ScheduledPost) {
+    const targets = post.platforms.map((p) => PLATFORM_LABELS[p]).join(", ");
+    try {
+      const res = await fetch("/api/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caption: post.caption || post.hook,
+          platforms: post.platforms,
+        }),
+      });
+      const data = (await res.json()) as { source?: string; error?: string };
+      if (!res.ok || data.source === "error") {
+        toast.error("Posting failed", {
+          description: data.error ?? "Try again in a moment.",
+        });
+        return;
+      }
+      setPosted((prev) => new Set(prev).add(post.id));
+      if (data.source === "zernio") {
+        toast.success("Posted via Zernio", {
+          description: `${post.hook} → ${targets}`,
+        });
+      } else {
+        toast.success("Simulated post (demo)", {
+          description: `Set ZERNIO_API_KEY to publish for real · ${targets}`,
+        });
+      }
+    } catch {
+      toast.error("Posting failed", { description: "Network error." });
+    }
   }
 
   return (
     <>
       <PageHeader
         title="Scheduler"
-        description="Pick platforms, auto-generate a caption, and let Zernio MCP handle the actual posting."
+        description="Pick platforms, auto-generate a caption, and let Zernio handle the actual posting."
       >
         <Button onClick={() => openScript()}>
           <Plus />
@@ -56,7 +80,7 @@ export default function SchedulerPage() {
             <span className="text-primary font-medium">One-click publishing</span>
             <span className="text-muted-foreground">
               Claude writes the caption from your hook + angle + CTA, then{" "}
-              <span className="text-foreground font-medium">Zernio MCP</span>{" "}
+              <span className="text-foreground font-medium">Zernio</span>{" "}
               posts to Instagram, TikTok &amp; YouTube Shorts in one shot.
             </span>
           </CardContent>

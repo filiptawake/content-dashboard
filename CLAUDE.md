@@ -140,7 +140,7 @@ over — that wiring is the next step.
 | **Materials** | `/materials` | Reusable template library — reel formats, caption frameworks, carousels, b-roll. Filter by type, search tags, sort by most-used. "Use this" seeds `/script`. |
 | **Analytics** | `/analytics` | Views / saves / follows / DM volume with a sparkline per metric over 7/30/90 days. Flags any reel beating the **30-day median views by 2×** as a "heater"; shows the top 5 by views with a one-line note. |
 | **Competitor Tracker** | `/competitors` | Top reels from tracked creators (weekly Sunday scrape), sorted by views, with handle, follower count, hook, on-screen text, a link to the reel, and a "Save to Hook Vault" button. |
-| **Scheduler** | `/scheduler` | The publish queue. Pick platforms (IG / TikTok / YouTube Shorts), auto-generate a caption, and "Post now" simulates posting via the **Zernio API**. |
+| **Scheduler** | `/scheduler` | The publish queue. Pick platforms (IG / TikTok / YouTube Shorts), auto-generate a caption, and "Post now" posts via the **Zernio API** (simulated without a key). |
 | **Content Calendar** | `/calendar` | Monthly grid; each slot shows date + time, platform, and hook. Click a slot for the full script + caption in a side panel. |
 | **What's Trending** | `/trending` | AI news from 12 sources, auto-tagged `hook potential` / `explainer` / `skip`. Top 5 hook-worthy items by recency; "Slack the highlights" simulates the 7am digest. |
 
@@ -157,7 +157,7 @@ real wiring would go:
 | Competitor weekly scrape | demo reels | `src/data/competitors.ts` → a Sunday 8am cron + scraper that stores the reel link (no transcription) |
 | Materials / templates | demo library | `src/data/materials.ts` → a Supabase `materials` table |
 | Caption generation | **live-capable** | `src/app/api/caption/route.ts` (Claude) |
-| Multi-platform posting | simulated toast | `src/app/scheduler/page.tsx` → **Zernio API** (`POST /api/v1/posts`) |
+| Multi-platform posting | **live-capable** | `src/app/api/post/route.ts` → **Zernio API** (`POST /api/v1/posts`); simulates without `ZERNIO_API_KEY` |
 | 12-source trend feed | demo items | `src/data/trending.ts` → RSS/X pollers + a daily tagging job (Claude) |
 | 7am Slack digest | simulated toast | a scheduled job → Slack webhook |
 
