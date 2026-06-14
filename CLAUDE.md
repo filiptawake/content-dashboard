@@ -116,6 +116,22 @@ by the route handler. To go live: `export ANTHROPIC_API_KEY=sk-ant-…`.
 
 ---
 
+## Data layer (Supabase)
+
+Persistence is **optional and mirrors the AI layer**:
+
+- **No Supabase env vars** → the app reads the seed data in `src/data/*` (demo mode).
+- **Env vars set** → `src/lib/supabase.ts` exposes `getSupabase()` (anon, respects
+  RLS — for reads) and `getServiceSupabase()` (server-only, bypasses RLS — the seam
+  API routes and n8n write through).
+
+Schema and setup live in [`supabase/`](supabase/README.md): `migrations/0001_init.sql`
+creates one table per domain type in `src/lib/types.ts`, `seed.sql` adds a starter
+row set. Reads are still served from `src/data/*` until the providers are switched
+over — that wiring is the next step.
+
+---
+
 ## The seven pages
 
 | Page | Route | What it does |
