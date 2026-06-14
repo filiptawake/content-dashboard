@@ -65,7 +65,10 @@ export interface Hook {
   niche: Niche;
   originalCreator: string; // @handle the hook was lifted from
   views: number; // views on the source reel
-  transcript: string; // transcribed opening line(s)
+  /** Manually-typed opening line(s). Optional — competitor saves link the reel instead of transcribing. */
+  transcript?: string;
+  /** Permalink to the source reel (stored instead of paying to transcribe). */
+  sourceUrl?: string;
   savedAt: string; // ISO date
   source: "manual" | "competitor";
 }
@@ -112,7 +115,8 @@ export interface CompetitorReel {
   views: number;
   hook: string;
   onScreenText: string;
-  transcript: string;
+  /** Permalink to the reel — we store the video link instead of transcribing (no Whisper cost). */
+  videoUrl: string;
   audioTitle: string;
   hookType: HookType;
 }
@@ -156,4 +160,50 @@ export interface TrendItem {
   niche: Niche;
   /** Suggested hook angle when tag === "hook-potential". */
   hookAngle?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Materials — a reusable library of formats, frameworks and assets the creator
+// pulls into a script. Each material can seed /script via "Use this".
+// ---------------------------------------------------------------------------
+
+export type MaterialType =
+  | "reel-format"
+  | "caption-framework"
+  | "carousel"
+  | "b-roll"
+  | "cover";
+
+export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
+  "reel-format": "Reel format",
+  "caption-framework": "Caption framework",
+  carousel: "Carousel",
+  "b-roll": "B-roll",
+  cover: "Cover",
+};
+
+export interface Material {
+  id: string;
+  accountId: string;
+  title: string;
+  type: MaterialType;
+  niche: Niche;
+  /** When and why to reach for this template. */
+  description: string;
+  /** Optional link to the asset (CapCut/Drive/reel). We store the link, not a transcription. */
+  url?: string;
+  tags: string[];
+  /** For caption frameworks: the fill-in-the-blank body shown on the card. */
+  body?: string;
+  /** Seed values dropped into /script when "Use this" is clicked. */
+  seed?: {
+    hook?: string;
+    angle?: string;
+    cta?: string;
+  };
+  /** Times this template has been pulled into a script. */
+  usageCount: number;
+  addedAt: string; // ISO
+  /** Two color stops for the thumbnail gradient. */
+  gradient: [string, string];
 }

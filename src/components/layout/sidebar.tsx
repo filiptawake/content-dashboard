@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Quote,
+  LayoutTemplate,
   ChartNoAxesColumn,
   Radar,
   Send,
@@ -28,6 +29,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/", label: "Today", icon: LayoutDashboard },
   { href: "/hook-vault", label: "Hook Vault", icon: Quote },
+  { href: "/materials", label: "Materials", icon: LayoutTemplate },
   { href: "/analytics", label: "Analytics", icon: ChartNoAxesColumn },
   { href: "/competitors", label: "Competitor Tracker", icon: Radar },
   { href: "/scheduler", label: "Scheduler", icon: Send },

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Eye, Music, Bookmark, BookmarkCheck, Type } from "lucide-react";
+import { Eye, Music, Bookmark, BookmarkCheck, Type, Play } from "lucide-react";
 import { toast } from "sonner";
 
 import { useDashboard } from "@/components/providers";
@@ -47,7 +47,7 @@ export default function CompetitorsPage() {
       niche: reel.niche,
       originalCreator: reel.creatorHandle,
       views: reel.views,
-      transcript: reel.transcript,
+      sourceUrl: reel.videoUrl,
       savedAt: new Date().toISOString(),
       source: "competitor",
     };
@@ -62,7 +62,7 @@ export default function CompetitorsPage() {
     <>
       <PageHeader
         title="Competitor Tracker"
-        description={`Top reels from the creators ${activeAccount.handle} tracks — scraped weekly, transcribed, with hooks pulled.`}
+        description={`Top reels from the creators ${activeAccount.handle} tracks — scraped weekly, with the reel and hook pulled.`}
       >
         <Badge variant="secondary" className="font-normal">
           {creatorCount} creators · scraped {formatDate(lastSunday())}
@@ -122,9 +122,15 @@ export default function CompetitorsPage() {
                   </span>
                 </div>
 
-                <p className="text-muted-foreground border-l-2 pl-3 text-sm italic">
-                  {reel.transcript}
-                </p>
+                <a
+                  href={reel.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1.5 text-sm transition-colors"
+                >
+                  <Play className="size-3.5" />
+                  Watch reel
+                </a>
 
                 <div className="flex justify-end border-t pt-4">
                   <Button

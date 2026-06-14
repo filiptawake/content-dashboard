@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, Eye, Wand2, Quote as QuoteIcon } from "lucide-react";
+import { Search, Eye, Wand2, Play, Quote as QuoteIcon } from "lucide-react";
 
 import { useDashboard, useScriptComposer } from "@/components/providers";
 import {
@@ -55,7 +55,7 @@ export default function HookVaultPage() {
           q &&
           !h.text.toLowerCase().includes(q) &&
           !h.originalCreator.toLowerCase().includes(q) &&
-          !h.transcript.toLowerCase().includes(q)
+          !(h.transcript ?? "").toLowerCase().includes(q)
         )
           return false;
         return true;
@@ -162,9 +162,21 @@ export default function HookVaultPage() {
                   <p className="text-[15px] leading-snug font-medium">
                     {hook.text}
                   </p>
-                  <p className="text-muted-foreground line-clamp-2 text-xs">
-                    {hook.transcript}
-                  </p>
+                  {hook.transcript ? (
+                    <p className="text-muted-foreground line-clamp-2 text-xs">
+                      {hook.transcript}
+                    </p>
+                  ) : hook.sourceUrl ? (
+                    <a
+                      href={hook.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1 text-xs transition-colors"
+                    >
+                      <Play className="size-3" />
+                      Watch source reel
+                    </a>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center justify-between gap-2 border-t px-6 pt-4">
